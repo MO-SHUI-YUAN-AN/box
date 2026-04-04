@@ -1,0 +1,7 @@
+/.vscode/
+/build/
+/bin/
+/.cache/
+/install/
+/log/
+classes.txt
