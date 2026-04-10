@@ -11,11 +11,11 @@ find_package(OpenCV REQUIRED)
 find_package(realsense2 REQUIRED)
 
 ###########################
-find_package(interfaces REQUIRED)
+find_package(robot_interfaces REQUIRED)
 ###########################
 
 # find dependencies
-# find_package(robot_interfaces REQUIRED)
+# find_package(robot_robot_interfaces REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 
@@ -28,7 +28,7 @@ find_package(tf2_ros REQUIRED)
 
 find_package(sensor_msgs REQUIRED)
 
-add_library(inference STATIC src/inference.cpp)
+add_library(inference STATIC src/inference.cpp src/BoxIdentify.cpp)
 target_include_directories(inference PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(inference ${OpenCV_LIBS})
 
@@ -54,8 +54,8 @@ ament_target_dependencies(
   main
   rclcpp
   sensor_msgs
-  # robot_interfaces
-  interfaces
+  # robot_robot_interfaces
+  robot_interfaces
 )
 
 install(TARGETS main

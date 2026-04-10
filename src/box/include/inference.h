@@ -54,4 +54,48 @@ private:
     cv::dnn::Net net;
 };
 
+/* ================== pnp的类 ===================== */
+class BoxIdentify
+{
+public:
+    BoxIdentify(
+        const std::string &onnxModelPath, 
+        const cv::Size &modelInputShape = {640, 640}, 
+        const std::string &classesTxtFile = "", const bool &runWithCuda = true
+    );
+
+    char runBoxIdentify(cv::Mat camera);
+        
+    void pnp_parameter();
+    
+    void getrvec(cv::Mat &rvec_copy);
+    
+    void gettvec(cv::Mat &tvec_copy);
+    // 相机参数 双目
+    cv::Mat cameraMatrix;
+    
+    // 相机参数 双目
+    cv::Mat distCoeffs;
+    
+    // 3D点坐标（世界坐标系，单位：米）
+    std::vector<cv::Point3f> objectPoints;
+    
+    bool boolrvec = false;
+    bool booltvec = false;
+private:
+    std::vector<cv::Point2f> checkRect(cv::Mat &edge,const cv::Mat &mask,std::vector<cv::Point2f> &bestRectPoints);
+    // pnp结果
+    cv::Mat rvec, tvec;
+
+    Inference inf;
+    
+    cv::Ptr<cv::CLAHE> clahe;
+    
+    // 改进的角点排序：按左上、右上、右下、左下顺序
+    std::vector<cv::Point2f> sortRectanglePoints(std::vector<cv::Point2f>& points);
+    
+    // 计算四边形的面积
+    double polygonArea(const std::vector<cv::Point2f>& pts);
+};
+
 #endif // INFERENCE_H
