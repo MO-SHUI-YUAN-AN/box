@@ -1,55 +1,21 @@
-#include <opencv2/core/types.hpp>
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include <rclcpp/rclcpp.hpp>
-#include <robot_interfaces/msg/vis.hpp>
-#include <inference.h>
-#include <vector>
 
 using namespace cv;
 using namespace std;
 
-/* ================== 话题通信的类 ===================== */
-class TargetPosePublisher : public rclcpp::Node
-{
-public:
-TargetPosePublisher() : Node("pnp_move")
-    {
-        position_pub_ = this->create_publisher<robot_interfaces::msg::Vis>(
-            "pnp_move", 10);
-    }
-
-    void publishPose()
-    {
-        robot_interfaces::msg::Vis speed;
-
-        speed.x = x;
-        speed.y = y;
-        speed.z = z;
-
-        position_pub_->publish(speed);
-        RCLCPP_INFO(this->get_logger(), "Published: x=%.3f, y=%.3f, z=%.3f", x, y, z);
-    }
-    float x = 0,y = 0,z = 0;
-
-private:
-    bool one = true;
-    rclcpp::Publisher<robot_interfaces::msg::Vis>::SharedPtr position_pub_;
-};
-
-int main(int argc, char **argv)
+int main()
 {
     /* =========================================================
      *  相机内参（来自 ROS2 camera_info）
      * ========================================================= */
     Mat cameraMatrix = (Mat_<double>(3,3) <<
-        1370.8107940134055, 0.0, 556.39132788099221,
-        0.0,1281.062561469829, 223.26649476675038, 
-        0.0, 0.0, 1.0);
+        689.383961, 0.0,        620.412744,
+        0.0,        690.604491, 381.697635,
+        0.0,        0.0,        1.0);
 
     Mat distCoeffs = (Mat_<double>(1,5) <<
-        0.10025983659817955, 3.2775333685154071,
-       -0.0064453364944689765, 0.12518365205913148, -11.795160353987193);
+        0.014295, -0.034779, 0.001624, -0.000775, 0.0);
 
     /* =========================================================
      *  物体模型参数
@@ -59,15 +25,11 @@ int main(int argc, char **argv)
     /* =========================================================
      *  0. 读取模板图像
      * ========================================================= */
-    vector<Mat> templs;
-    templs.push_back(imread(
+    Mat templ = imread(
         "/home/yuan/Vscode_word/awork_mycode/box/src/close_pnp/image/1.jpg",
-        IMREAD_GRAYSCALE));
-    templs.push_back(imread(
-        "/home/yuan/Vscode_word/awork_mycode/box/src/close_pnp/image/6.jpg",
-        IMREAD_GRAYSCALE));
+        IMREAD_GRAYSCALE);
 
-    if (templs.empty())
+    if (templ.empty())
     {
         cout << "模板读取失败" << endl;
         return -1;
@@ -76,7 +38,7 @@ int main(int argc, char **argv)
     /* =========================================================
      *  1. 打开摄像头
      * ========================================================= */
-    VideoCapture cap(0);   // 摄像头编号按需修改
+    VideoCapture cap(2);   // 摄像头编号按需修改
     if (!cap.isOpened())
     {
         cout << "无法打开摄像头" << endl;
@@ -91,18 +53,11 @@ int main(int argc, char **argv)
      * ========================================================= */
     Ptr<ORB> orb = ORB::create(1000);
 
-    vector<vector<KeyPoint>> kp_templs;
-    vector<Mat> des_templs; 
-    for(int i = 0; i < templs.size(); i++){
-        vector<KeyPoint> kp_templ;
-        Mat des_templ;
-        orb->detectAndCompute(templs[i], noArray(), kp_templ, des_templ);
+    vector<KeyPoint> kp_templ;
+    Mat des_templ;
+    orb->detectAndCompute(templ, noArray(), kp_templ, des_templ);
 
-        kp_templs.push_back(kp_templ);  
-        des_templs.push_back(des_templ);
-    }
-
-    if (des_templs.empty())
+    if (des_templ.empty())
     {
         cout << "模板 ORB 特征提取失败" << endl;
         return -1;
@@ -111,17 +66,6 @@ int main(int argc, char **argv)
     BFMatcher matcher(NORM_HAMMING);
 
     cout << "开始摄像头检测（ESC 退出）" << endl;
-
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<TargetPosePublisher>();
-
-    Inference inf("/home/yuan/Vscode_word/awork_mycode/box/src/close_pnp/best.onnx");
-    static const std::vector<std::string> classes{
-        "0","1","2","3"
-    };
-
-    int id = -1;
-    bool hasPrintedStable = false;        // 是否已输出稳定结果
 
     /* =========================================================
      *  主循环
@@ -132,25 +76,6 @@ int main(int argc, char **argv)
         cap >> frame;
         if (frame.empty())
             break;
-        
-        if(!hasPrintedStable){
-            vector<Detection> detections = inf.runInference(frame);
-            float conf = 0.0;
-            for(auto &det : detections){
-                if(det.confidence > conf){
-                    conf = det.confidence;
-                    id = det.class_id;
-                    hasPrintedStable = true;
-                }
-            }
-        }
-        if(id == -1){
-            continue;
-        }
-
-        vector<KeyPoint> kp_templ = kp_templs[id];
-        Mat des_templ = des_templs[id];
-        Mat templ = templs[id];
 
         cvtColor(frame, gray, COLOR_BGR2GRAY);
 
@@ -232,10 +157,6 @@ int main(int argc, char **argv)
                     false,
                     SOLVEPNP_ITERATIVE
                 );
-                node->x = tvec.at<double>(0);
-                node->y = tvec.at<double>(1);
-                node->z = tvec.at<double>(2);
-                node->publishPose();
 
                 if (pnp_ok)
                 {
