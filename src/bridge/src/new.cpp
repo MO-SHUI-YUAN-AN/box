@@ -7,6 +7,7 @@
  * 帧间平滑滤波、异常剔除与稳帧判定。
  */
 
+#include "robot_interfaces/msg/detail/bridgeb__struct.hpp"
 #include <librealsense2/rs.hpp>
 #include <opencv2/opencv.hpp>
 #include <iostream>
@@ -730,6 +731,9 @@ int main(int argc, char** argv) {
         Line3D prevLine3D;                    // 上一帧的3D直线
         bool hasPrintedStable = false;        // 是否已输出稳定结果
 
+        Mat mask = Mat::zeros(Size(640, 480), CV_8UC1);
+        cv::rectangle(mask,Rect(120,0,640,480),cv::Scalar(255),-1);
+
         // 话题类
         auto node = std::make_shared<TargetPosePublisher>();
 
@@ -744,6 +748,9 @@ int main(int argc, char** argv) {
             
             // 步骤1：深度边缘检测
             Mat depthEdges = detectDepthEdges(depthImage, depthScale);
+            bitwise_and(depthEdges, mask, depthEdges);
+
+            // Mat depthEdges;
             // 均值滤波
             // blur(depthEdges, depthEdges, Size(3,  3));
             // 中值滤波
@@ -754,7 +761,7 @@ int main(int argc, char** argv) {
             // dilate(depthEdges, depthEdges, getStructuringElement(MORPH_ELLIPSE, Size(3, 3)));
             // 开闭运算
             // morphologyEx(depthEdges, depthEdges, MORPH_OPEN, getStructuringElement(MORPH_RECT, Size(3, 3)));
-            morphologyEx(depthEdges, depthEdges, MORPH_CLOSE, getStructuringElement(MORPH_RECT, Size(7, 7)));
+            // morphologyEx(depthEdges, depthEdges, MORPH_CLOSE, getStructuringElement(MORPH_RECT, Size(7, 7)));
             // 提取连通域
             depthEdges = extractConnectedComponents(depthEdges);
 
@@ -842,7 +849,7 @@ int main(int argc, char** argv) {
                 char intersectText[64];
                 sprintf(intersectText, "Intersect: (%d, %d)", intersectX, CENTER_Y);
                 putText(result, intersectText, Point(20, 130), FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 0, 0), 1);
-
+ 
                 char posText[64];
                 sprintf(posText, "Line: (%d,%d) - (%d,%d)",
                         nearestLine[0], nearestLine[1], nearestLine[2], nearestLine[3]);
@@ -880,6 +887,7 @@ int main(int argc, char** argv) {
 
             // 显示窗口
             imshow("深度边缘图", edgeVis);
+            imshow("掩码", mask);
             imshow("深度图", depthColorMap);
             imshow("间隙检测结果", result);
             // imshow("连通域", stars);
