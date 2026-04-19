@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
     // pipe.start(cfg);
 
-    VideoCapture cap(2);
+    VideoCapture cap(3);
     Mat camera;
 
     rclcpp::init(argc, argv);
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         Mat rvec,tvec;
         work.getrvec(rvec);
         work.gettvec(tvec);
-        cout << "x " << rvec.at<double>(0,0) << "\t y " << rvec.at<double>(1,0) << "\t z " << rvec.at<double>(2,0) << endl;
+        cout << "x " << tvec.at<double>(0,0) << "\t y " << tvec.at<double>(1,0) << "\t z " << tvec.at<double>(2,0) << endl;
 
         node->vx = tvec.at<double>(0);
         node->vy = tvec.at<double>(1);
