@@ -80,22 +80,23 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
 }
     
 void BoxIdentify::pnp_parameter(){
-    // 相机参数 双目
+    // 相机参数
     cameraMatrix = (cv::Mat_<double>(3,3) << 
-    775.0817798329149, 0, 657.9073666547347, 
-    0, 775.3491152597893, 363.5442002041569, 
-    0, 0, 1);
+        272.7916458397306, 0, 333.2833666396724, 
+        0, 271.2841255860707, 228.3852834450803, 
+        0, 0, 1);
     
-    // 相机参数 双目
+    // 相机参数
     distCoeffs = (cv::Mat_<double>(1,5) << 
-    0.08020486644231081, -0.1733432710897198, 
-    -0.001440808381498728, -0.0005563035195006499, 
-    0.09159837936546486);
+            -0.07767331276251165, -0.03491219473500765, 
+            -0.00722970855996338, 0.00695079849635151, 
+            0.02516328251979533);
     
     objectPoints.clear();
     
+    // 构建现实世界坐标
     float width = 0.25f;  // 矩形宽度
-    float height = 0.25f; // 矩形高度
+    float height = 0.25f; // 矩形高度Probability
     objectPoints.push_back(cv::Point3f(-width/2, -height/2, 0));  // 左上
     objectPoints.push_back(cv::Point3f(width/2, -height/2, 0));   // 右上
     objectPoints.push_back(cv::Point3f(width/2, height/2, 0));     // 右下

@@ -10,6 +10,7 @@
 #include <librealsense2/rs.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/videoio.hpp>
 #include <rclcpp/executors.hpp>
 #include <unistd.h>
 #include <vector>
@@ -71,17 +72,20 @@ int main(int argc, char **argv)
 
     work.pnp_parameter();
 
-    rs2::pipeline pipe;
-    rs2::config cfg;
+    // rs2::pipeline pipe;
+    // rs2::config cfg;
 
-    cfg.enable_stream(
-        RS2_STREAM_COLOR,
-        1280,720,
-        RS2_FORMAT_BGR8,
-        30  //帧率
-    );
+    // cfg.enable_stream(
+    //     RS2_STREAM_COLOR,
+    //     1280,720,
+    //     RS2_FORMAT_BGR8,
+    //     30  //帧率
+    // );
 
-    pipe.start(cfg);
+    // pipe.start(cfg);
+
+    VideoCapture cap(2);
+    Mat camera;
 
     rclcpp::init(argc, argv);
     auto node = std::make_shared<TargetPosePublisher>();
@@ -90,17 +94,19 @@ int main(int argc, char **argv)
     node->step_mode = 2;
 
     while(rclcpp::ok()){
-        rs2::frameset frameset = pipe.wait_for_frames();
-        rs2::frame color = frameset.get_color_frame();
+        // rs2::frameset frameset = pipe.wait_for_frames();
+        // rs2::frame color = frameset.get_color_frame();
 
-        if(!color)  continue;
+        // if(!color)  continue;
 
-        Mat camera(
-            Size(1280,720),
-            CV_8UC3,
-            (void*)color.get_data(),
-            Mat::AUTO_STEP
-        );
+
+        // Mat camera(
+        //     Size(1280,720),
+        //     CV_8UC3,
+        //     (void*)color.get_data(),
+        //     Mat::AUTO_STEP
+        // );
+        cap >> camera;
 
         char c = work.runBoxIdentify(camera);
         if(c == 27) break;
@@ -110,6 +116,7 @@ int main(int argc, char **argv)
         Mat rvec,tvec;
         work.getrvec(rvec);
         work.gettvec(tvec);
+        cout << "x " << rvec.at<double>(0,0) << "\t y " << rvec.at<double>(1,0) << "\t z " << rvec.at<double>(2,0) << endl;
 
         node->vx = tvec.at<double>(0);
         node->vy = tvec.at<double>(1);
