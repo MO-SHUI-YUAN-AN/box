@@ -82,16 +82,14 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
 void BoxIdentify::pnp_parameter(){
     // 相机参数
     cameraMatrix = (cv::Mat_<double>(3,3) << 
-        272.7916458397306, 0, 333.2833666396724, 
-        0, 271.2841255860707, 228.3852834450803, 
-        0, 0, 1);
+                    330.732920, 0.000000, 323.284477, 
+                    0.000000, 330.604624, 235.624095, 
+                    0.000000, 0.000000, 1.000000);
     
     // 相机参数
     distCoeffs = (cv::Mat_<double>(1,5) << 
-            -0.07767331276251165, -0.03491219473500765, 
-            -0.00722970855996338, 0.00695079849635151, 
-            0.02516328251979533);
-    
+        -0.015437, -0.017894, -0.000542, 0.001233, 0.000000
+    );    
     objectPoints.clear();
     
     // 构建现实世界坐标
@@ -144,41 +142,50 @@ std::vector<cv::Point2f> BoxIdentify::checkRect(cv::Mat &edge,const cv::Mat &mas
         // 必须是凸四边形
         if(!cv::isContourConvex(approx)) continue;
         
-        // 计算面积比
+        // 计算面积比（面积筛选）
         double approxArea = cv::contourArea(approx);
-        if(approxArea < 1) continue;
-        
+        if(approxArea < 1000) continue;
+
         double areaRatio = area / approxArea;
-        
         // 轮廓面积与多边形面积之比应该接近1
         if(areaRatio < 0.8 || areaRatio > 1.2) continue;
-        
-        // 检查四边形的最小角度（避免过于尖锐）
+
+        // 正方形面积筛选：最小外接旋转矩形的宽高比接近1，允许小透视
+        cv::RotatedRect minRect = cv::minAreaRect(approx);
+        float rectW = minRect.size.width;
+        float rectH = minRect.size.height;
+        if(rectW < 1e-3f || rectH < 1e-3f) continue;
+
+        float whRatio = std::max(rectW, rectH) / std::min(rectW, rectH);
+        if(whRatio > 1.35f) continue;
+
+        double fillRatio = approxArea / (rectW * rectH);
+        if(fillRatio < 0.65 || fillRatio > 1.1) continue;
+
+        // 四点角度筛选：接近90度，允许轻微透视畸变
         std::vector<float> angles;
         for(int j = 0; j < 4; j++) {
-            cv::Point2f a = approx[j];
-            cv::Point2f b = approx[(j + 1) % 4];
-            cv::Point2f c = approx[(j + 2) % 4];
-            
+            cv::Point2f a = approx[(j + 3) % 4];
+            cv::Point2f b = approx[j];
+            cv::Point2f c = approx[(j + 1) % 4];
+
             cv::Point2f v1 = a - b;
             cv::Point2f v2 = c - b;
-            
-            float dot = v1.x * v2.x + v1.y * v2.y;
+
             float len1 = sqrt(v1.x * v1.x + v1.y * v1.y);
             float len2 = sqrt(v2.x * v2.x + v2.y * v2.y);
-            
-            if(len1 > 0 && len2 > 0) {
-                float angle = acos(dot / (len1 * len2)) * 180 / CV_PI;
-                angles.push_back(angle);
-            }
+            if(len1 < 1e-6f || len2 < 1e-6f) continue;
+
+            float cosValue = (v1.x * v2.x + v1.y * v2.y) / (len1 * len2);
+            cosValue = std::max(-1.0f, std::min(1.0f, cosValue));
+            float angle = acos(cosValue) * 180.0f / CV_PI;
+            angles.push_back(angle);
         }
-        
-        // 检查角度是否合理
-        if(!angles.empty()) {
-            float minAngle = *min_element(angles.begin(), angles.end());
-            float maxAngle = *max_element(angles.begin(), angles.end());
-            if(minAngle < 30 || maxAngle > 150) continue;  // 避免过于尖锐或平缓
-        }
+
+        if(angles.size() != 4) continue;
+        float minAngle = *min_element(angles.begin(), angles.end());
+        float maxAngle = *max_element(angles.begin(), angles.end());
+        if(minAngle < 60.0f || maxAngle > 120.0f) continue;
         
         // 选择最大的合理矩形
         if(area > bestArea) {
