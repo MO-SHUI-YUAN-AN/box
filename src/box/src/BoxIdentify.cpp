@@ -13,7 +13,7 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
     cv::Mat drawing = camera.clone();   // 备份图片信息
     if(drawing.empty()) return -1;
 
-    cv::Mat gray;       
+    cv::Mat gray;
     cv::cvtColor(camera, gray, cv::COLOR_BGR2GRAY);   // 转为灰度图
     cv::GaussianBlur(gray,gray,cv::Size(5,5),10,20);  // 高斯滤波
 
@@ -29,10 +29,10 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
     cv::Mat mask = cv::Mat::zeros(cv::Size(camera.cols,camera.rows),CV_8UC1); // 制作掩码;
     for(const auto& detection : output){
             cv::Rect box = detection.box;
-            box.x -= 3;
-            box.y -= 3;
-            box.height += 6;
-            box.width += 6;
+            box.x -= box.height * 0.1;
+            box.y -= box.height * 0.1;
+            box.height *= 1.2;
+            box.width *= 1.2;
 
             cv::rectangle(mask,box,cv::Scalar(255),-1);
     }
@@ -82,13 +82,13 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
 void BoxIdentify::pnp_parameter(){
     // 相机参数
     cameraMatrix = (cv::Mat_<double>(3,3) << 
-                    330.732920, 0.000000, 323.284477, 
-                    0.000000, 330.604624, 235.624095, 
-                    0.000000, 0.000000, 1.000000);
+                330.732920, 0.000000, 323.284477, 
+                0.000000, 330.604624, 235.624095, 
+                0.000000, 0.000000, 1.000000);
     
     // 相机参数
     distCoeffs = (cv::Mat_<double>(1,5) << 
-        -0.015437, -0.017894, -0.000542, 0.001233, 0.000000
+            -0.015437, -0.017894, -0.000542, 0.001233, 0.000000
     );    
     objectPoints.clear();
     

@@ -23,6 +23,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JumpCmd.msg"
   "msg/Vis.msg"
   "msg/Bridgeb.msg"
+  "msg/Int.msg"
   DEPENDENCIES builtin_interfaces geometry_msgs std_msgs
 )
 
