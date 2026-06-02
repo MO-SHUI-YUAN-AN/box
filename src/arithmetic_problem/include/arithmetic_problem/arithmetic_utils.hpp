@@ -30,27 +30,77 @@ inline char classIdToChar(int class_id) {
     }
 }
 
-// 按顺序修正括号：从左到右数到的第 1、3、5... 个括号一律改为 '('，
-// 第 2、4、6... 个一律改为 ')'。如果总数为奇数（不配对），丢弃最后一个落单的。
-inline std::string fixParentheses(const std::string& expr) {
-    std::string result = expr;
-    std::vector<size_t> parenPositions;
-    for (size_t i = 0; i < result.size(); ++i) {
-        if (result[i] == '(' || result[i] == ')') {
-            parenPositions.push_back(i);
+inline bool isBinaryOperator(char ch) {
+    return ch == '+' || ch == '-' || ch == '*' || ch == '/';
+}
+
+inline bool normalizeParentheses(std::string& expr) {
+    std::vector<size_t> paren_positions;
+    for (size_t i = 0; i < expr.size(); ++i) {
+        if (expr[i] == '(' || expr[i] == ')') {
+            paren_positions.push_back(i);
         }
     }
-    for (size_t k = 0; k < parenPositions.size(); ++k) {
-        result[parenPositions[k]] = (k % 2 == 0) ? '(' : ')';
+
+    if (paren_positions.size() % 2 == 1) {
+        return false;
     }
-    if (parenPositions.size() % 2 == 1) {
-        result.erase(parenPositions.back(), 1);
+
+    for (size_t k = 0; k < paren_positions.size(); ++k) {
+        expr[paren_positions[k]] = (k % 2 == 0) ? '(' : ')';
     }
-    return result;
+    return true;
+}
+
+inline bool isAcceptableExpression(const std::string& expr) {
+    if (expr.empty()) return false;
+
+    int balance = 0;
+    char prev = '\0';
+
+    for (size_t i = 0; i < expr.size(); ++i) {
+        const char ch = expr[i];
+        const bool is_digit = std::isdigit(static_cast<unsigned char>(ch)) != 0;
+        const bool is_left_paren = ch == '(';
+        const bool is_right_paren = ch == ')';
+        const bool is_op = isBinaryOperator(ch);
+
+        if (!is_digit && !is_left_paren && !is_right_paren && !is_op) {
+            return false;
+        }
+
+        if (i == 0) {
+            if (is_op || is_right_paren) return false;
+        } else {
+            const bool prev_is_digit = std::isdigit(static_cast<unsigned char>(prev)) != 0;
+            const bool prev_is_left_paren = prev == '(';
+            const bool prev_is_right_paren = prev == ')';
+            const bool prev_is_op = isBinaryOperator(prev);
+
+            if (prev_is_op && (is_op || is_right_paren)) return false;
+            if (prev_is_left_paren && (ch == '*' || ch == '/' || is_right_paren || ch == '-')) return false;
+            if ((prev_is_digit || prev_is_right_paren) && is_left_paren) return false;
+            if (prev_is_right_paren && is_digit) return false;
+        }
+
+        if (is_left_paren) {
+            ++balance;
+        } else if (is_right_paren) {
+            --balance;
+            if (balance < 0) return false;
+        }
+
+        prev = ch;
+    }
+
+    if (balance != 0) return false;
+    if (isBinaryOperator(prev) || prev == '(') return false;
+
+    return true;
 }
 
 // 四则运算计算器（支持 + - * / 和括号，按运算优先级）
-inline long long calcExpression(const std::string& expr) {
+inline bool tryCalcExpression(const std::string& expr, long long& result) {
     std::vector<long long> nums;
     std::vector<char> ops;
 
@@ -61,26 +111,34 @@ inline long long calcExpression(const std::string& expr) {
         return 0;
     };
 
-    auto applyTop = [&]() {
-        if (ops.empty()) return;
-        char op = ops.back(); ops.pop_back();
-        if (nums.size() < 2) return;
-        long long b = nums.back(); nums.pop_back();
-        long long a = nums.back(); nums.pop_back();
+    auto applyTop = [&]() -> bool {
+        if (ops.empty() || nums.size() < 2) return false;
+        const char op = ops.back();
+        ops.pop_back();
+        const long long b = nums.back();
+        nums.pop_back();
+        const long long a = nums.back();
+        nums.pop_back();
+
         long long r = 0;
         switch (op) {
             case '+': r = a + b; break;
             case '-': r = a - b; break;
             case '*': r = a * b; break;
-            case '/': r = (b == 0) ? 0 : a / b; break;
-            default: r = 0; break;
+            case '/':
+                if (b == 0) return false;
+                r = a / b;
+                break;
+            default:
+                return false;
         }
         nums.push_back(r);
+        return true;
     };
 
     size_t i = 0;
     while (i < expr.size()) {
-        char ch = expr[i];
+        const char ch = expr[i];
         if (std::isdigit(static_cast<unsigned char>(ch))) {
             long long val = 0;
             while (i < expr.size() && std::isdigit(static_cast<unsigned char>(expr[i]))) {
@@ -88,29 +146,46 @@ inline long long calcExpression(const std::string& expr) {
                 ++i;
             }
             nums.push_back(val);
-        } else if (ch == '(') {
+            continue;
+        }
+
+        if (ch == '(') {
             ops.push_back(ch);
             ++i;
-        } else if (ch == ')') {
+            continue;
+        }
+
+        if (ch == ')') {
             while (!ops.empty() && ops.back() != '(') {
-                applyTop();
+                if (!applyTop()) return false;
             }
-            if (!ops.empty() && ops.back() == '(') ops.pop_back();
+            if (ops.empty() || ops.back() != '(') return false;
+            ops.pop_back();
             ++i;
-        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+            continue;
+        }
+
+        if (isBinaryOperator(ch)) {
             while (!ops.empty() && ops.back() != '(' &&
                    precedence(ops.back()) >= precedence(ch)) {
-                applyTop();
+                if (!applyTop()) return false;
             }
             ops.push_back(ch);
             ++i;
-        } else {
-            ++i;
+            continue;
         }
-    }
-    while (!ops.empty()) applyTop();
 
-    return nums.empty() ? 0 : nums.back();
+        return false;
+    }
+
+    while (!ops.empty()) {
+        if (ops.back() == '(') return false;
+        if (!applyTop()) return false;
+    }
+
+    if (nums.size() != 1) return false;
+    result = nums.back();
+    return true;
 }
 
 // 把结果对 4 取模，得到 1-4 之间的正整数

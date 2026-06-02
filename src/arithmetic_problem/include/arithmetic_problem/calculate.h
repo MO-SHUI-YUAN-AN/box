@@ -26,7 +26,7 @@ public:
 
         std::size_t max_samples{100};            // 最多统计 100 项结果
         std::size_t min_samples{20};             // 至少统计 20 项才允许提前返回
-        double dominance_threshold{0.30};        // 占比超过 30% 即可提前返回
+        double dominance_threshold{0.80};        // 占比超过 80% 即可提前返回
         std::chrono::milliseconds timeout{5000}; // 超过 5 秒强制返回当前众数
         bool show_window{false};                 // 是否打开 imshow 窗口可视化
     };

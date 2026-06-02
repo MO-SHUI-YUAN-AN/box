@@ -200,31 +200,6 @@ int main(int argc, char **argv)
         node->vy = tvec.at<double>(1);
         node->vz = tvec.at<double>(2);
 
-        // node->vx = 0;
-        // node->vy = 0;
-        // node->vz = 0;
-
-        // if(tvec.empty()){
-        //     node->vz = 1.0; // 如果pnp失败，让狗以最大速度旋转
-        // }
-        // else if(tvec.at<double>(0,0) > 0.08){
-        //     node->vz = -0.4; // 如果物块在右侧，小幅度顺时针旋转
-        // }
-        // else if(tvec.at<double>(0,0) < -0.08){
-        //     node->vz = 0.4; // 如果物块在左侧，小幅度逆时针旋转
-        // }
-        // else{
-        //     if(tvec.at<double>(2,0) > 2){
-        //         node->vx = 1.0; // 与目标距离大于两米，让狗以最大速度移动
-        //     }
-        //     else if(tvec.at<double>(2,0) > 0.35){
-        //         node->vx = 1-(2-tvec.at<double>(2,0) / 1.65); // 两米及以内，速度逐步降低
-        //     }
-        //     else{
-        //         node->vx = 0;
-        //     }
-        // }
-
         // 向狗发布指令
         node->publishPose();
 
