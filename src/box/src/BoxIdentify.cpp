@@ -9,12 +9,18 @@ BoxIdentify::BoxIdentify(const std::string &onnxModelPath, const cv::Size &model
 
 char BoxIdentify::runBoxIdentify(cv::Mat camera)
 {
+    if(camera.empty()) return -1;
+
+    /* ============ 先对图像进行去畸变 ============= */
+    cv::Mat undistorted;
+    cv::undistort(camera, undistorted, cameraMatrix, distCoeffs);
+
     /* ============ 对图片进行处理 ============= */
-    cv::Mat drawing = camera.clone();   // 备份图片信息
+    cv::Mat drawing = undistorted.clone();   // 备份图片信息
     if(drawing.empty()) return -1;
 
-    cv::Mat gray;       
-    cv::cvtColor(camera, gray, cv::COLOR_BGR2GRAY);   // 转为灰度图
+    cv::Mat gray;
+    cv::cvtColor(undistorted, gray, cv::COLOR_BGR2GRAY);   // 转为灰度图
     cv::GaussianBlur(gray,gray,cv::Size(5,5),10,20);  // 高斯滤波
 
     // CLAHE增强
@@ -25,8 +31,8 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
     cv::Canny(gray, edges, 50, 150);
 
     /* ========= 制作掩码 ========== */
-    std::vector<Detection> output = inf.runInference(camera);
-    cv::Mat mask = cv::Mat::zeros(cv::Size(camera.cols,camera.rows),CV_8UC1); // 制作掩码;
+    std::vector<Detection> output = inf.runInference(undistorted);
+    cv::Mat mask = cv::Mat::zeros(cv::Size(undistorted.cols,undistorted.rows),CV_8UC1); // 制作掩码;
     for(const auto& detection : output){
             cv::Rect box = detection.box;
             box.x -= 3;
@@ -39,38 +45,46 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
 
     std::vector<cv::Point2f> bestRectPoints;
     checkRect(edges, mask, bestRectPoints);
-    
+
     bool success = false;
-        
+
     // 如果有找到合适的矩形
     if(bestRectPoints.size() == 4) {
         // 对点进行排序
         bestRectPoints = sortRectanglePoints(bestRectPoints);
-        
+
         // 绘制矩形
         for(int i = 0; i < 4; i++) {
-            cv::line(drawing, bestRectPoints[i], bestRectPoints[(i + 1) % 4], 
+            cv::line(drawing, bestRectPoints[i], bestRectPoints[(i + 1) % 4],
             cv::Scalar(0, 255, 0), 3);
         }
-        
+
         // 绘制角点
         for(int i = 0; i < 4; i++) {
-            cv::circle(drawing, bestRectPoints[i], 8, 
+            cv::circle(drawing, bestRectPoints[i], 8,
                 cv::Scalar(0, 0, 255), -1);
                 cv::putText(drawing, std::to_string(i), bestRectPoints[i] + cv::Point2f(5, 5),
                 cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(255, 255, 255), 2);
             }
-            
+
+        std::vector<cv::Point2f> normalizedPoints;
+        cv::undistortPoints(
+            bestRectPoints,
+            normalizedPoints,
+            cameraMatrix,
+            cv::Mat::zeros(distCoeffs.size(), distCoeffs.type())
+        );
+
         // PnP解算
-        success = cv::solvePnP(objectPoints, bestRectPoints, 
-            cameraMatrix, distCoeffs, 
+        success = cv::solvePnP(objectPoints, normalizedPoints,
+            cv::Mat::eye(3, 3, CV_64F), cv::Mat::zeros(4, 1, CV_64F),
             rvec, tvec, false, cv::SOLVEPNP_ITERATIVE
         );
         if(success){
             boolrvec = true;
             booltvec = true;
         }
-        drawFrameAxes(drawing,cameraMatrix,distCoeffs,rvec,tvec,0.05);
+        drawFrameAxes(drawing,cameraMatrix,cv::Mat::zeros(distCoeffs.size(), distCoeffs.type()),rvec,tvec,0.05);
     }
     cv::imshow(".",drawing);
     cv::imshow("edge",edges);
