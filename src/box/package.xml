@@ -11,8 +11,12 @@
 
   <depend>launch</depend>
   <depend>launch_ros</depend>
-  <!--  -->
-  <depend>inferfaces</depend>
+  <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>robot_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

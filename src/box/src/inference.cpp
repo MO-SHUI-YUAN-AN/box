@@ -171,18 +171,9 @@ void Inference::loadClassesFromFile()
 void Inference::loadOnnxNetwork()
 {
     net = cv::dnn::readNetFromONNX(modelPath);
-    if (cudaEnabled)
-    {
-        std::cout << "\nRunning on CUDA" << std::endl;
-        net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
-        net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
-    }
-    else
-    {
-        std::cout << "\nRunning on CPU" << std::endl;
-        net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
-        net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
-    }
+    std::cout << "\nRunning on CPU" << std::endl;
+    net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+    net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
 }
 
 cv::Mat Inference::formatToSquare(const cv::Mat &source)

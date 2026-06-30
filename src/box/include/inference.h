@@ -24,13 +24,13 @@ struct Detection
 class Inference
 {
 public:
-    Inference(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = true);
+    Inference(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = false);
 
     std::vector<Detection> runInference(const cv::Mat &input);
 
     Inference();
 
-    void loadInference(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = true);
+    void loadInference(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = false);
 
 private:
     void loadClassesFromFile();
@@ -61,7 +61,7 @@ public:
     BoxIdentify(
         const std::string &onnxModelPath, 
         const cv::Size &modelInputShape = {640, 640}, 
-        const std::string &classesTxtFile = "", const bool &runWithCuda = true
+        const std::string &classesTxtFile = "", const bool &runWithCuda = false
     );
 
     char runBoxIdentify(cv::Mat camera);

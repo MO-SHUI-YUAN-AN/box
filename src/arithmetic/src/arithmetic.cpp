@@ -124,7 +124,7 @@ private:
 class arithmetic
 {
 public:
-  arithmetic(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = true){
+  arithmetic(const std::string &onnxModelPath, const cv::Size &modelInputShape = {640, 640}, const std::string &classesTxtFile = "", const bool &runWithCuda = false){
     inf.loadInference(onnxModelPath,modelInputShape,classesTxtFile,runWithCuda);
   }
 
