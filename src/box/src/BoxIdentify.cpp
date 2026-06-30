@@ -19,16 +19,20 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
     cv::Mat drawing = undistorted.clone();   // 备份图片信息
     if(drawing.empty()) return -1;
 
-    cv::Mat gray;
-    cv::cvtColor(undistorted, gray, cv::COLOR_BGR2GRAY);   // 转为灰度图
-    cv::GaussianBlur(gray,gray,cv::Size(5,5),10,20);  // 高斯滤波
+    cv::Mat lab;
+    cv::cvtColor(undistorted, lab, cv::COLOR_BGR2Lab);
 
-    // CLAHE增强
-    clahe->apply(gray, gray);
+    cv::Mat labMask;
+    cv::inRange(
+        lab,
+        cv::Scalar(55, 100 - 128, -24 + 128),
+        cv::Scalar(100, 11 + 128, 20 + 128),
+        labMask
+    );
 
-    // 边缘检测
-    cv::Mat edges;
-    cv::Canny(gray, edges, 50, 150);
+    cv::Mat thresh;
+    cv::GaussianBlur(labMask, thresh, cv::Size(5,5), 0, 0);
+    cv::threshold(thresh, thresh, 127, 255, cv::THRESH_BINARY);
 
     /* ========= 制作掩码 ========== */
     std::vector<Detection> output = inf.runInference(undistorted);
@@ -44,7 +48,7 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
     }
 
     std::vector<cv::Point2f> bestRectPoints;
-    checkRect(edges, mask, bestRectPoints);
+    checkRect(thresh, mask, bestRectPoints);
 
     bool success = false;
 
@@ -87,7 +91,7 @@ char BoxIdentify::runBoxIdentify(cv::Mat camera)
         drawFrameAxes(drawing,cameraMatrix,cv::Mat::zeros(distCoeffs.size(), distCoeffs.type()),rvec,tvec,0.05);
     }
     cv::imshow(".",drawing);
-    cv::imshow("edge",edges);
+    cv::imshow("lab",thresh);
     cv::imshow("mask",mask);
     char c = cv::waitKey(1);
     return c;
