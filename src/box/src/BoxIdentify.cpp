@@ -132,8 +132,8 @@ std::vector<cv::Point2f> BoxIdentify::checkRect(cv::Mat &edge,const cv::Mat &mas
     bitwise_and(edge, mask, edge);
     
     // 形态学操作
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-    cv::dilate(edge, edge, kernel);
+    // cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+    // cv::dilate(edge, edge, kernel);
     
     // 查找轮廓
     std::vector<std::vector<cv::Point>> contours;

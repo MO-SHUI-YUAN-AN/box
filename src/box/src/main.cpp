@@ -144,7 +144,7 @@ void kalmanFilterTvec(cv::InputArray tvec_obs, cv::OutputArray tvec_filt,
 
 int main(int argc, char **argv)
 {
-    BoxIdentify work("/home/yuan/Vscode_word/awork_mycode/box/src/box/best.onnx");
+    BoxIdentify work("/home/pc2/test/box/src/box/best.onnx");
 
     work.pnp_parameter();
 
