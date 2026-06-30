@@ -33,7 +33,9 @@
 using namespace cv;
 using namespace std;
 
-const int CameraID = 2;
+const int CameraID = 1;
+const char * kDefaultCameraIndex = "/dev/v4l/by-id/usb-HD_Camera_Manufacturer_USB_2.0_Camera-video-index0";
+
     
 /* ================== 话题通信的类 ===================== */
 class TargetPosePublisher : public rclcpp::Node
@@ -160,7 +162,8 @@ int main(int argc, char **argv)
 
     // pipe.start(cfg);
 
-    VideoCapture cap(CameraID);
+    VideoCapture cap;
+    cap.open(kDefaultCameraIndex);
     Mat camera;
 
     rclcpp::init(argc, argv);
