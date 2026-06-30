@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcalculate.a CMakeFiles/calculate.dir/src/calculate.cpp.o
+/usr/bin/ranlib libcalculate.a

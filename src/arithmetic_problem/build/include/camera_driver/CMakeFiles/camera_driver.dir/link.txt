@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcamera_driver.a CMakeFiles/camera_driver.dir/src/camera_driver.cpp.o CMakeFiles/camera_driver.dir/src/inference.cpp.o CMakeFiles/camera_driver.dir/src/pnp_kalman.cpp.o
+/usr/bin/ranlib libcamera_driver.a

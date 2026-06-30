@@ -1,0 +1,4 @@
+source;share/arithmetic_problem/local_setup.bash
+source;share/arithmetic_problem/local_setup.dsv
+source;share/arithmetic_problem/local_setup.sh
+source;share/arithmetic_problem/local_setup.zsh
